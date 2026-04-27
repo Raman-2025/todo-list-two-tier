@@ -1,0 +1,48 @@
+services:
+  mysql:
+    image: mysql:9
+    container_name: mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - 2-tier
+    volumes:
+      - my-data:/var/lib/mysql
+      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro  
+    environment:
+       MYSQL_ROOT_PASSWORD: root
+       MYSQL_DATABASE: mydb
+    restart: always
+    healthcheck:
+       test: [ "CMD","mysqladmin","ping","-h","localhost","-uroot","-proot" ]
+       interval: 10s
+       timeout: 5s
+       retries: 5
+       start_period: 30s   
+
+
+  flaskapp:
+    build:
+      context: .
+    container_name: flaskapp
+    ports:
+      - "5000:5000"
+    networks:
+      - 2-tier
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_DATABASE: mydb
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+    restart: always
+    depends_on:
+       mysql:
+        condition: service_healthy   
+
+
+
+networks: 
+  2-tier:
+
+volumes:
+  my-data:  
